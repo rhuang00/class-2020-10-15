@@ -46,6 +46,21 @@ tibble(urn_red = seq(100, 700, by = 100)) %>%
 
 Interpret the meaning of the graphic.
 
+```{r}
+urn_size <- nrow(urn)
+paddle_size <- 25
+reps <- 1000
+
+q1 <- tibble(urn_red = rep(seq(0, urn_size, by = 1), reps)) %>% 
+  mutate(paddle_red = map_int(urn_red, ~ rbinom(n = 1, size = paddle_size, prob = ./urn_size))) # %>% 
+  #unnest(paddle_red) %>% 
+ # sample_n(1)
+
+q1 %>% 
+  ggplot(aes(x = paddle_red, y = urn_red)) +
+   geom_point(alpha = 0.5) +
+  ylim(0, 1200)
+```
 
 
 
@@ -53,6 +68,21 @@ Interpret the meaning of the graphic.
 
 **Prompt:** Using the joint distribution we calculated in Scene 1 as input, calculate your posterior probability density for the number of red beads in the urn, given that that 10 red were sampled in our paddle of 25.
 
+```{r}
+urn_size <- nrow(urn)
+paddle_size <- 25
+reps <- 1000
+
+q1 <- tibble(urn_red = rep(seq(0, urn_size, by = 1), reps)) %>% 
+  mutate(paddle_red = map_int(urn_red, ~ rbinom(n = 1, size = paddle_size, prob = ./urn_size)))
+
+q2 <- q1 %>% 
+  filter(paddle_red == 10) %>% 
+   group_by(urn_red) %>% 
+  summarize(total = n(), .groups = "drop") %>%
+  mutate(probs = total/sum(total)) %>% 
+  select(-total)
+```
 
 
 
@@ -60,5 +90,15 @@ Interpret the meaning of the graphic.
 
 **Prompt:** With our posterior probability distribution, we can now forecast outcomes which we have not yet seen. For example, what is the probability of getting more than 3 reds if we sample 20 from the urn, given our posterior? (That is, we are pretending that we don't know the number of red beads in the urn.)
 
+```{r}
+q3 <- q2 %>% 
+   mutate(new_reds = map(urn_red, 
+                            ~ rbinom(n = 100, 
+                                     size = 20,
+                                     prob = ./urn_size))) %>% 
+  unnest(new_reds) %>% 
+  mutate(res = ifelse(new_reds > 3, TRUE, FALSE)) %>% 
+  summarise(final = weighted.mean(res, probs))
+```
 
 
